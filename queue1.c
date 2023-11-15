@@ -1,103 +1,231 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
-#define MAX_SIZE 10
+// Define a structure for a BST node
+struct TreeNode {
+    int data;
+    struct TreeNode *left;
+    struct TreeNode *right;
+};
 
-// Define a structure for the circular queue
-typedef struct  {
-    char* data[MAX_SIZE];
-    int front;
-    int rear;
-}CircularQueue;
+// Define a structure for a stack node
+struct StackNode {
+    struct TreeNode *node;
+    struct StackNode *next;
+};
 
-void init(CircularQueue* cq) {
-    cq->front = -1;
-    cq->rear = -1;
-}
+// Function prototypes
+struct TreeNode* createBST(struct TreeNode* root, int key);
+struct TreeNode* deleteNode(struct TreeNode* root, int key);
+void inOrderTraversal(struct TreeNode* root);
+void freeTree(struct TreeNode* root);
+void push(struct StackNode** top, struct TreeNode* node);
+struct TreeNode* pop(struct StackNode** top);
 
-
-int isEmpty(CircularQueue* cq) {
-    return (cq->front == -1 && cq->rear == -1);
-}
-
-
-int isFull(CircularQueue* cq) {
-    return ((cq->rear + 1) % MAX_SIZE == cq->front);
-}
-
-
-void insertcq(CircularQueue* cq, const char* item) {
-    if (isFull(cq)) {
-        printf("Queue is full. Cannot insert.\n");
-        return;
+// Function to create a BST (Iterative)
+struct TreeNode* createBST(struct TreeNode* root, int key) {
+    if (root == NULL) {
+        struct TreeNode* newNode = (struct TreeNode*)malloc(sizeof(struct TreeNode));
+        newNode->data = key;
+        newNode->left = newNode->right = NULL;
+        return newNode;
     }
 
-    cq->rear = (cq->rear + 1) % MAX_SIZE;
-    cq->data[cq->rear] = strdup(item);
+    struct TreeNode* current = root;
+    struct TreeNode* parent = NULL;
 
-    if (cq->front == -1) {
-        cq->front = cq->rear;
+    while (current != NULL) {
+        parent = current;
+
+        if (key < current->data) {
+            current = current->left;
+        } else if (key > current->data) {
+            current = current->right;
+        } else {
+            // Duplicate keys are not allowed
+            return root;
+        }
     }
-}
 
+    struct TreeNode* newNode = (struct TreeNode*)malloc(sizeof(struct TreeNode));
+    newNode->data = key;
+    newNode->left = newNode->right = NULL;
 
-void deletecq(CircularQueue* cq) {
-    if (isEmpty(cq)) {
-        printf("Queue is empty. Cannot delete.\n");
-        return;
-    }
-
-    free(cq->data[cq->front]);
-
-    // if only one element in queue then after deleting reset to position to -1 i.e is Empty ohh!
-    if (cq->front == cq->rear) {
-        cq->front = cq->rear = -1;
+    if (key < parent->data) {
+        parent->left = newNode;
     } else {
-        cq->front = (cq->front + 1) % MAX_SIZE;
+        parent->right = newNode;
     }
+
+    return root;
 }
 
-// Display the circular queue
-void displaycq(CircularQueue* cq) {
-    if (isEmpty(cq)) {
-        printf("Queue is empty.\n");
-        return;
+// Function to delete a node from the BST (Iterative)
+struct TreeNode* deleteNode(struct TreeNode* root, int key) {
+    struct TreeNode* current = root;
+    struct TreeNode* parent = NULL;
+
+    while (current != NULL) {
+        if (key < current->data) {
+            parent = current;
+            current = current->left;
+        } else if (key > current->data) {
+            parent = current;
+            current = current->right;
+        } else {
+            // Node with only one child or no child
+            if (current->left == NULL) {
+                struct TreeNode* temp = current->right;
+                if (parent == NULL) {
+                    root = temp;
+                } else if (current == parent->left) {
+                    parent->left = temp;
+                } else {
+                    parent->right = temp;
+                }
+                free(current);
+                return root;
+            } else if (current->right == NULL) {
+                struct TreeNode* temp = current->left;
+                if (parent == NULL) {
+                    root = temp;
+                } else if (current == parent->left) {
+                    parent->left = temp;
+                } else {
+                    parent->right = temp;
+                }
+                free(current);
+                return root;
+            }
+
+            // Node with two children, replace with the in-order successor
+            struct TreeNode* successorParent = current;
+            struct TreeNode* successor = current->right;
+
+            while (successor->left != NULL) {
+                successorParent = successor;
+                successor = successor->left;
+            }
+
+            current->data = successor->data;
+
+            if (successorParent == current) {
+                successorParent->right = successor->right;
+            } else {
+                successorParent->left = successor->right;
+            }
+
+            free(successor);
+            return root;
+        }
     }
 
-    int i = cq->front;
-    do {
-        printf("%s ", cq->data[i]);
-        i = (i + 1) % MAX_SIZE;
-    } while (i != (cq->rear + 1) % MAX_SIZE);
+    return root;
+}
+
+// Function to perform in-order traversal of the BST (Iterative)
+void inOrderTraversal(struct TreeNode* root) {
+    struct StackNode* stack = NULL;
+    struct TreeNode* current = root;
+
+    while (current != NULL || stack != NULL) {
+        while (current != NULL) {
+            push(&stack, current);
+            current = current->left;
+        }
+
+        current = pop(&stack);
+        printf("%d ", current->data);
+
+        current = current->right;
+    }
 
     printf("\n");
 }
 
+// Function to push a node onto the stack
+void push(struct StackNode** top, struct TreeNode* node) {
+    struct StackNode* newNode = (struct StackNode*)malloc(sizeof(struct StackNode));
+    newNode->node = node;
+    newNode->next = *top;
+    *top = newNode;
+}
+
+// Function to pop a node from the stack
+struct TreeNode* pop(struct StackNode** top) {
+    if (*top == NULL) {
+        return NULL;
+    }
+
+    struct StackNode* temp = *top;
+    struct TreeNode* node = temp->node;
+    *top = temp->next;
+    free(temp);
+    return node;
+}
+
+// Function to free the memory allocated for the tree
+void freeTree(struct TreeNode* root) {
+    struct StackNode* stack = NULL;
+    struct TreeNode* current = root;
+
+    while (current != NULL || stack != NULL) {
+        while (current != NULL) {
+            if (current->right != NULL) {
+                push(&stack, current->right);
+            }
+            struct TreeNode* temp = current;
+            current = current->left;
+            free(temp);
+        }
+
+        current = pop(&stack);
+    }
+}
+
+// Main function
 int main() {
-    CircularQueue cq;
-    init(&cq);
+    struct TreeNode* root = NULL;
+    int choice, key;
 
-    insertcq(&cq, "One");
-    insertcq(&cq, "Two");
-    insertcq(&cq, "Three");
-    insertcq(&cq, "Four");
+    do {
+        printf("\nMenu:\n");
+        printf("1. Insert element\n");
+        printf("2. Delete element\n");
+        printf("3. Display elements (In-order traversal)\n");
+        printf("4. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
 
-    printf("Queue after inserts: ");
-    displaycq(&cq);
+        switch (choice) {
+            case 1:
+                printf("Enter the element to insert: ");
+                scanf("%d", &key);
+                root = createBST(root, key);
+                break;
 
-    deletecq(&cq);
-    deletecq(&cq);
+            case 2:
+                printf("Enter the element to delete: ");
+                scanf("%d", &key);
+                root = deleteNode(root, key);
+                break;
 
-    printf("Queue after deletes: ");
-    displaycq(&cq);
+            case 3:
+                printf("Elements (In-order traversal): ");
+                inOrderTraversal(root);
+                break;
 
-    insertcq(&cq, "Five");
-    insertcq(&cq, "Six");
-    insertcq(&cq, "Seven");
+            case 4:
+                // Free the allocated memory before exiting
+                freeTree(root);
+                printf("Program terminated.\n");
+                break;
 
-    printf("Queue after more inserts: ");
-    displaycq(&cq);
+            default:
+                printf("Invalid choice! Please enter a valid option.\n");
+        }
+
+    } while (choice != 4);
 
     return 0;
 }

@@ -1,133 +1,112 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MAX_SIZE 10
+// Define a structure for a BST node
+struct TreeNode {
+    int data;
+    struct TreeNode *left;
+    struct TreeNode *right;
+};
 
-typedef struct  {
-    int items[MAX_SIZE];
-    int front;
-    int rear;
-}CircularQueue;
+// Function prototypes
+struct TreeNode* insertNode(struct TreeNode* root, int key);
+struct TreeNode* findInOrderSuccessor(struct TreeNode* root, struct TreeNode* node);
 
-// Initialize the circular queue
-void initialize(CircularQueue* cq) {
-    cq->front = -1;
-    cq->rear = -1;
-}
-
-// Check if the circular queue is empty
-int isEmpty(CircularQueue* cq) {
-    return (cq->front == -1 && cq->rear == -1);
-}
-
-// Check if the circular queue is full
-int isFull(CircularQueue* cq) {
-    return ((cq->rear + 1) % MAX_SIZE == cq->front);
-}
-
-// Insert an element into the circular queue
-void insertcq(CircularQueue* cq, int item) {
-    if (isFull(cq)) {
-        printf("Queue is full. Cannot insert.\n");
-        return;
+// Function to create a BST (Recursive)
+struct TreeNode* insertNode(struct TreeNode* root, int key) {
+    if (root == NULL) {
+        struct TreeNode* newNode = (struct TreeNode*)malloc(sizeof(struct TreeNode));
+        newNode->data = key;
+        newNode->left = newNode->right = NULL;
+        return newNode;
     }
 
-    if (isEmpty(cq)) {
-        cq->front = cq->rear = 0;
-    } else {
-        cq->rear = (cq->rear + 1) % (MAX_SIZE / 2);
+    if (key < root->data) {
+        root->left = insertNode(root->left, key);
+    } else if (key > root->data) {
+        root->right = insertNode(root->right, key);
     }
 
-    cq->items[cq->rear] = item;
+    return root;
 }
 
-// Delete an element from the circular queue
-int deletecq(CircularQueue* cq) {
-    if (isEmpty(cq)) {
-        printf("Queue is empty. Cannot delete.\n");
-        return -1; // Return a value indicating an error
+// Function to find the in-order successor of a node (Recursive)
+struct TreeNode* findInOrderSuccessor(struct TreeNode* root, struct TreeNode* node) {
+    if (root == NULL || node == NULL) {
+        return NULL;
     }
 
-    int deletedItem = cq->items[cq->front];
-
-    if (cq->front == cq->rear) {
-        cq->front = cq->rear = -1;
-    } else {
-        cq->front = (cq->front + 1) % (MAX_SIZE / 2);
+    // If the right subtree of the node is not null,
+    // the successor is the leftmost node in the right subtree.
+    if (node->right != NULL) {
+        return findMin(node->right);
     }
 
-    return deletedItem;
+    // If the right subtree is null, the successor is
+    // the lowest ancestor whose left child is also an ancestor of the node.
+    struct TreeNode* successor = NULL;
+    while (root != NULL) {
+        if (node->data < root->data) {
+            successor = root;
+            root = root->left;
+        } else if (node->data > root->data) {
+            root = root->right;
+        } else {
+            break;
+        }
+    }
+
+    return successor;
 }
 
-// Display the circular queue
-void displaycq(CircularQueue* cq) {
-    if (isEmpty(cq)) {
-        printf("Queue is empty.\n");
-        return;
+// Function to find the node with the minimum value in a BST
+struct TreeNode* findMin(struct TreeNode* node) {
+    while (node->left != NULL) {
+        node = node->left;
     }
-
-    int i = cq->front;
-    do {
-        printf("%d ", cq->items[i]);
-        i = (i + 1) % (MAX_SIZE / 2);
-    } while (i != (cq->rear + 1) % (MAX_SIZE / 2));
-
-    printf("\n");
+    return node;
 }
 
+// Main function
 int main() {
-    CircularQueue cq1, cq2;
-    initialize(&cq1);
-    initialize(&cq2);
+    struct TreeNode* root = NULL;
+    int keys[] = {15, 8, 20, 5, 10, 17, 25};
 
-    // Insert elements into the first queue (0 to N/2)
-    for (int i = 0; i <= MAX_SIZE / 4; i++) {
-        insertcq(&cq1, i);
+    // Insert elements into the BST
+    for (int i = 0; i < sizeof(keys) / sizeof(keys[0]); ++i) {
+        root = insertNode(root, keys[i]);
     }
 
-    // Insert elements into the second queue (N/2+1 to N-1)
-    for (int i = MAX_SIZE / 2 + 1; i < MAX_SIZE; i++) {
-        insertcq(&cq2, i);
+    // Find the in-order successor for a specific node (e.g., node with key 10)
+    int keyToFind = 10;
+    struct TreeNode* nodeToFind = NULL;
+    struct TreeNode* current = root;
+
+    while (current != NULL) {
+        if (keyToFind < current->data) {
+            current = current->left;
+        } else if (keyToFind > current->data) {
+            current = current->right;
+        } else {
+            nodeToFind = current;
+            break;
+        }
     }
 
-    printf("First Queue: ");
-    displaycq(&cq1);
+    if (nodeToFind != NULL) {
+        struct TreeNode* successor = findInOrderSuccessor(root, nodeToFind);
 
-    printf("Second Queue: ");
-    displaycq(&cq2);
+        if (successor != NULL) {
+            printf("In-order successor of %d is %d\n", nodeToFind->data, successor->data);
+        } else {
+            printf("No in-order successor found for %d\n", nodeToFind->data);
+        }
+    } else {
+        printf("Node with key %d not found in the BST.\n", keyToFind);
+    }
 
-    deletecq(&cq1);
-    deletecq(&cq2);
-    deletecq(&cq2);
+    // Free the allocated memory before exiting
+    free(root);
 
-    printf("\nFirst Queue after deleting is: ");
-    displaycq(&cq1);
-
-    printf("Second Queue after deleting is: ");
-    displaycq(&cq2);
-
-    insertcq(&cq1, 100);
-    insertcq(&cq2, 100);
-
-    printf("\nFirst Queue after inserting is: ");
-    displaycq(&cq1);
-
-    printf("Second Queue after inserting is: ");
-    displaycq(&cq2);
-
-    insertcq(&cq1, 100);
-    insertcq(&cq2, 100);
-    insertcq(&cq1, 100);
-    insertcq(&cq2, 100);
-
-    // overflow occurring consition
-    insertcq(&cq1, 100);
-    insertcq(&cq2, 100);
-    printf("\nFirst Queue after inserting is: ");
-    displaycq(&cq1);
-
-    printf("Second Queue after inserting is: ");
-    displaycq(&cq2);
-    
     return 0;
 }

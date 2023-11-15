@@ -1,88 +1,85 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MAX_SIZE 100
+// Define a structure for a binary tree node
+struct TreeNode {
+    int data;
+    struct TreeNode *left;
+    struct TreeNode *right;
+};
 
-typedef struct  {
-    int items[MAX_SIZE];
-    int top;
-}Stack;
+// Function prototypes
+struct TreeNode *constructBT(int pre[], int post[], int *preIndex, int start, int end, int size);
+struct TreeNode *createNode(int data);
+void printInOrder(struct TreeNode *root);
 
-void initialize(Stack* stack) {
-    stack->top = -1;
-}
-
-int isEmpty(Stack* stack) {
-    return stack->top == -1;
-}
-
-int isFull(Stack* stack) {
-    return stack->top == MAX_SIZE - 1;
-}
-
-void push(Stack* stack, int item) {
-    if (isFull(stack)) {
-        printf("Stack is full. Cannot push.\n");
-        return;
+// Function to construct a binary tree from pre-order and post-order traversal
+struct TreeNode *constructBT(int pre[], int post[], int *preIndex, int start, int end, int size) {
+    if (*preIndex >= size || start > end) {
+        return NULL;
     }
-    stack->items[++stack->top] = item;
+
+    struct TreeNode *root = createNode(pre[*preIndex]);
+    (*preIndex)++;
+
+    if (start == end) {
+        return root;
+    }
+
+    int postIndex;
+    for (postIndex = start; postIndex <= end; postIndex++) {
+        if (post[postIndex] == pre[*preIndex]) {
+            break;
+        }
+    }
+
+    if (postIndex <= end) {
+        root->left = constructBT(pre, post, preIndex, start, postIndex, size);
+        root->right = constructBT(pre, post, preIndex, postIndex + 1, end, size);
+    }
+
+    return root;
 }
 
-int pop(Stack* stack) {
-    if (isEmpty(stack)) {
-        printf("Stack is empty. Cannot pop.\n");
-        return -1; // Return a sentinel value indicating an error
-    }
-    return stack->items[stack->top--];
+// Function to create a new node
+struct TreeNode *createNode(int data) {
+    struct TreeNode *newNode = (struct TreeNode *)malloc(sizeof(struct TreeNode));
+    newNode->data = data;
+    newNode->left = newNode->right = NULL;
+    return newNode;
 }
 
-void enqueue(Stack* stack1, Stack* stack2, int item) {
-    while (!isEmpty(stack2)) {
-        push(stack1, pop(stack2));
+// Function to print in-order traversal of a binary tree
+void printInOrder(struct TreeNode *root) {
+    if (root != NULL) {
+        printInOrder(root->left);
+        printf("%d ", root->data);
+        printInOrder(root->right);
     }
-    push(stack1, item);
 }
 
-int dequeue(Stack* stack1, Stack* stack2) {
-    while (!isEmpty(stack1)) {
-        push(stack2, pop(stack1));
-    }
-    if (isEmpty(stack2)) {
-        printf("Queue is empty. Cannot dequeue.\n");
-        return -1; // Return a sentinel value indicating an error
-    }
-    return pop(stack2);
-}
-
-void display(Stack* stack) {
-    if (isEmpty(stack)) {
-        printf("Stack is empty.\n");
-        return;
-    }
-    printf("Stack: ");
-    for (int i = 0; i <= stack->top; i++) {
-        printf("%d ", stack->items[i]);
-    }
-    printf("\n");
-}
-
+// Main function
 int main() {
-    Stack stack1, stack2;
-    initialize(&stack1);
-    initialize(&stack2);
+    int pre[] = {1, 2, 4, 8, 9, 5, 3, 6, 7};
+    int post[] = {8, 9, 4, 5, 2, 6, 7, 3, 1};
+    int size = sizeof(pre) / sizeof(pre[0]);
 
-    enqueue(&stack1, &stack2, 1);
-    enqueue(&stack1, &stack2, 2);
-    enqueue(&stack1, &stack2, 3);
+    int preIndex = 0;
+    struct TreeNode *root = constructBT(pre, post, &preIndex, 0, size - 1, size);
 
-    printf("Enqueued elements into the queue:\n");
-    display(&stack1);
+    printf("In-order traversal of the constructed Binary Tree: ");
+    printInOrder(root);
+    printf("\n");
 
-    int dequeued = dequeue(&stack1, &stack2);
-    printf("Dequeued element: %d\n", dequeued);
-
-    printf("Remaining elements in the queue:\n");
-    display(&stack1);
+    // Free the allocated memory before exiting
+    // (You can implement a separate function to free the tree nodes)
+    free(root->left->left);
+    free(root->left->right);
+    free(root->left);
+    free(root->right->left);
+    free(root->right->right);
+    free(root->right);
+    free(root);
 
     return 0;
 }

@@ -1,107 +1,81 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MAX_SIZE 101
-
-struct Queue {
-    int items[MAX_SIZE];
-    int front;
-    int rear;
+// Define a structure for a binary tree node
+struct TreeNode {
+    int data;
+    struct TreeNode *left;
+    struct TreeNode *right;
 };
 
-// Initialize the queue
-void initialize(struct Queue* q) {
-    q->front = -1;
-    q->rear = -1;
+// Function prototypes
+struct TreeNode* createNode(int key);
+void printAncestors(struct TreeNode* root, int key);
+
+// Function to create a new node
+struct TreeNode* createNode(int key) {
+    struct TreeNode* newNode = (struct TreeNode*)malloc(sizeof(struct TreeNode));
+    newNode->data = key;
+    newNode->left = newNode->right = NULL;
+    return newNode;
 }
 
-// Check if the queue is empty
-int isEmpty(struct Queue* q) {
-    return (q->front == -1);
-}
-
-// Check if the queue is full
-int isFull(struct Queue* q) {
-    return (q->rear == MAX_SIZE - 1);
-}
-
-// Enqueue (insert) an element into the queue
-void enqueue(struct Queue* q, int item) {
-    if (isFull(q)) {
-        printf("Queue is full. Cannot enqueue.\n");
+// Function to print ancestors of a key in a binary tree
+void printAncestors(struct TreeNode* root, int key) {
+    if (root == NULL) {
         return;
     }
-    if (isEmpty(q)) {
-        q->front = q->rear = 0;
+
+    if (root->data == key) {
+        // Key is found, no need to go further
+        return;
+    }
+
+    if ((root->left != NULL && root->left->data == key) ||
+        (root->right != NULL && root->right->data == key)) {
+        // Key is a child of the current root
+        printf("%d ", root->data);
+        return;
+    }
+
+    // Check in the left and right subtrees
+    if (key < root->data) {
+        printAncestors(root->left, key);
     } else {
-        q->rear++;
-    }
-    q->items[q->rear] = item;
-}
-
-// Dequeue (remove) an element from the queue
-int dequeue(struct Queue* q) {
-    if (isEmpty(q)) {
-        printf("Queue is empty. Cannot dequeue.\n");
-        return -1; // Return a sentinel value indicating an error
-    }
-    int removedItem = q->items[q->front];
-    if (q->front == q->rear) {
-        q->front = q->rear = -1;
-    } else {
-        q->front++;
-    }
-    return removedItem;
-}
-
-// Function to check if Vignesh and Lata can get money without insecurity
-int canGetMoney(int N, int K) {
-    struct Queue q;
-    initialize(&q);
-
-    // Insert people into the queue
-    for (int i = 1; i <= N; i++) {
-        enqueue(&q, i);
+        printAncestors(root->right, key);
     }
 
-    // Find the position of Vignesh and Lata in the queue
-    int vigneshPosition = -1;
-    int lataPosition = -1;
-    int count = 0;
-
-    while (!isEmpty(&q)) {
-        count++;
-        int person = dequeue(&q);
-        if (person == K) {
-            vigneshPosition = count;
-        }
-        if (person == K + 1) {
-            lataPosition = count;
-        }
-    }
-
-    // Check if Vignesh and Lata are in the same group
-    if ((vigneshPosition - 1) / 3 == (lataPosition - 1) / 3) {
-        return 1; // Vignesh and Lata are in the same group, they can get money
-    } else {
-        return 0; // Vignesh and Lata are in different groups, Lata will feel insecure
+    // If key is found in either subtree, print the current root
+    if ((root->left != NULL && root->left->data == key) ||
+        (root->right != NULL && root->right->data == key)) {
+        printf("%d ", root->data);
     }
 }
 
+// Main function
 int main() {
-    int T;
-    scanf("%d", &T);
+    struct TreeNode* root = createNode(50);
+    root->left = createNode(30);
+    root->right = createNode(70);
+    root->left->left = createNode(20);
+    root->left->right = createNode(40);
+    root->right->left = createNode(60);
+    root->right->right = createNode(80);
 
-    while (T--) {
-        int N, K;
-        scanf("%d %d", &N, &K);
+    int keyToFind = 40;
 
-        if (canGetMoney(N, K)) {
-            printf("Yes\n");
-        } else {
-            printf("No\n");
-        }
-    }
+    printf("Ancestors of %d: ", keyToFind);
+    printAncestors(root, keyToFind);
+    printf("\n");
+
+    // Free the allocated memory before exiting
+    free(root->left->left);
+    free(root->left->right);
+    free(root->right->left);
+    free(root->right->right);
+    free(root->left);
+    free(root->right);
+    free(root);
 
     return 0;
 }
